@@ -1,0 +1,33 @@
+{
+  "name": "leo-node-utils",
+  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447",
+  "version": "0.0.0",
+  "description": "A collection of useful functions for Node.js (For me)",
+  "main": "modules/index.js",
+  "repository": "https://github.com/leostacowski/leo-node-utils",
+  "author": "leonardo.stacowski@hotmail.com",
+  "license": "MIT",
+  "scripts": {
+    "dev": "yarn && nodemon",
+    "build": "",
+    "prebuild": "yarn --force --update-checksums && cls",
+    "postbuild": "yarn document",
+    "document": "jsdoc2md --template README.hbs modules/**/*.js > README.md"
+  },
+  "devDependencies": {
+    "jsdoc-to-markdown": "^9.1.1",
+    "nodemon": "^3.1.9"
+  },
+  "nodemonConfig": {
+    "delay": 1000,
+    "ext": "js,json",
+    "exec": "yarn document && cls && node --harmony modules/index.js",
+    "ignore": [
+      ".git",
+      "node_modules/**/node_modules"
+    ],
+    "watch": [
+      "*"
+    ]
+  }
+}
