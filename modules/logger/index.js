@@ -50,6 +50,7 @@ const PROCESS_PID = process.pid
 /**
  * Function that creates a new Logger instance.
  * @param {String} [loggerId=''] - The ID of the Logger instance.
+ * @returns {Object} The Logger instance.
  * @example
  * // Creates a new Logger instance.
  * const logger = createLogger();
