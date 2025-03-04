@@ -1,75 +1,81 @@
+'use strict'
+
+/**
+ * Logger module.
+ * @module Logger
+ */
+
 /**
  * LOG Event name.
+ *  @readonly
  *  @constant {String} LOG_EVENT='log'
  */
 const LOG_EVENT = 'log'
 
 /**
  * INFO Event name.
+ *  @readonly
  *  @constant {String} INFO_EVENT='info'
  */
 const INFO_EVENT = 'info'
 
 /**
  * SUCCESS Event name.
+ *  @readonly
  *  @constant {String} SUCCESS_EVENT='success'
  */
 const SUCCESS_EVENT = 'success'
 
 /**
  * ERROR Event name.
+ *  @readonly
  *  @constant {String} ERROR_EVENT='error'
  */
 const ERROR_EVENT = 'error'
 
 /**
  * WARN Event name.
+ *  @readonly
  *  @constant {String} WARN_EVENT='warn'
  */
 const WARN_EVENT = 'warn'
 
 /**
  * Current process PID.
+ *  @readonly
  *  @constant {String} PROCESS_PID=process.pid
  */
 const PROCESS_PID = process.pid
 
 /**
- * Class that defines a Logger instance.
- * @param {String} [loggerId] - The ID of the Logger instance.
+ * Function that creates a new Logger instance.
+ * @param {String} [loggerId=''] - The ID of the Logger instance.
  * @example
  * // Creates a new Logger instance.
- * const logger = new Logger();
+ * const logger = createLogger();
  * @example
  * // Creates a new Logger instance with an ID of "Logger".
- * const logger = new Logger('Logger');
+ * const logger = createLogger('Logger');
  */
-class Logger {
+const createLogger = (loggerId = '') => {
+  if (loggerId && typeof loggerId !== 'string')
+    throw new Error('The logger ID, if provided, must be a string.')
+
   /**
    * The current Logger ID.
    * @private
+   * @readonly
    * @property {String}
    */
-  loggerId = ''
-
-  /**
-   * Creates a new Logger instance.
-   * @constructor
-   */
-  constructor(loggerId = '') {
-    if (loggerId && typeof loggerId !== 'string')
-      throw new Error('The logger ID must be a string.')
-
-    this.loggerId = loggerId
-  }
+  const id = loggerId || ''
 
   /**
    * Given a type, returns a console color. Otherwhise returns a "reset" color code.
    * @private
-   * @param {String} [type]
+   * @param {String|undefined} [type]
    * @returns {String} The console color.
    */
-  getLogColor(type) {
+  const getLogColor = (type) => {
     switch (type) {
       case LOG_EVENT:
         return '\x1b[90m'
@@ -90,34 +96,71 @@ class Logger {
    * Given a content, returns a formatted message.
    * @private
    * @param {Object} messageContent
+   * @param {String|undefined} [messageContent.identifier] - The content to be formatted.
    * @param {*} messageContent.content - The content to be formatted.
    * @param {String} messageContent.type - The type of the content to be formatted.
    * @returns {String} The formatted message.
    */
-  getFormattedMessage({ content, type } = { content: '', type: '' }) {
+  const getFormattedMessage = (data = { identifier: '', content: '', type: '' }) => {
+    const { identifier, content, type } = data
     let targetContent = content
 
     if (typeof content !== 'string') targetContent = JSON.stringify(content)
 
-    const color = this.getLogColor(type)
-    const resetColor = this.getLogColor()
-    const loggerId = this.loggerId?.length ? ` @${this.loggerId}` : ''
+    const color = getLogColor(type)
+    const resetColor = getLogColor()
+    const loggerId = id?.length ? ` @${id}` : ''
+    const contentId = identifier?.length ? `.${identifier}` : ''
 
-    return `${color}<${PROCESS_PID}> [${type.toUpperCase()}]${loggerId}:${resetColor}\n${targetContent}`
+    return `${color}<${PROCESS_PID}> [${type.toUpperCase()}]${loggerId}${contentId}:${resetColor}\n${targetContent}`
+  }
+
+  /**
+   * Given an array of content, returns a formatted ([id = '', messageContent = *]) version of it.
+   * @private
+   * @param {Array<*>} arrayData
+   * @returns {Object} The formatted version of the array.
+   */
+  const getContentFromArray = (arrayData = []) => {
+    if (arrayData?.length > 1) {
+      const [identifier, ...content] = arrayData
+
+      if (identifier && typeof identifier === 'string') {
+        return {
+          identifier,
+          messageContent: content.join('\n'),
+        }
+      }
+    }
+
+    return {
+      messageContent: arrayData.join('\n'),
+    }
   }
 
   /**
    * Given a content, emits a log message to the console.
-   * @param {*} content - The content to be emitted.
+   * @param {...*} rawContent - The content to be emitted.
    * @returns {String} The formatted message.
    * @example
-   * // Emitts a formatted message to the console.
+   * // Emmits a formatted message to the console.
    * logger.log('Hello World!');
    * // Outputs:
-   * // '[LOG_COLOR]<[PROCESS_PID]> [LOG_TYPE] [LOGGER_ID]:[RESET_COLOR]\n[MESSAGE_CONTENT]'
+   * // '<PID> [LOG] @LOGGER_ID:\nHello World!'
+   * @example
+   * // Emmits a formatted message to the console with an identifier.
+   * logger.log('myLogIdentifier', 'Hello World!');
+   * // Outputs:
+   * // '<PID> [LOG] @LOGGER_ID.myLogIdentifier:\nHello World!'
    */
-  log(content) {
-    const message = this.getFormattedMessage({ content, type: LOG_EVENT })
+  const log = (...rawContent) => {
+    const { identifier, messageContent } = getContentFromArray(rawContent)
+
+    const message = getFormattedMessage({
+      identifier,
+      content: messageContent,
+      type: LOG_EVENT,
+    })
 
     console.log(message)
 
@@ -126,16 +169,27 @@ class Logger {
 
   /**
    * Given a content, emits a info message to the console.
-   * @param {*} content - The content to be emitted.
+   * @param {...*} rawContent - The content to be emitted.
    * @returns {String} The formatted message.
    * @example
-   * // Emitts a formatted message to the console.
+   * // Emmits a formatted message to the console.
    * logger.info('Hello World!');
    * // Outputs:
-   * // '[INFO_COLOR]<[PROCESS_PID]> [LOG_TYPE] [LOGGER_ID]:[RESET_COLOR]\n[MESSAGE_CONTENT]'
+   * // '<PID> [INFO] @LOGGER_ID:\nHello World!'
+   * @example
+   * // Emmits a formatted message to the console with an identifier.
+   * logger.info('myLogIdentifier', 'Hello World!');
+   * // Outputs:
+   * // '<PID> [INFO] @LOGGER_ID.myLogIdentifier:\nHello World!'
    */
-  info(content) {
-    const message = this.getFormattedMessage({ content, type: INFO_EVENT })
+  const info = (...rawContent) => {
+    const { identifier, messageContent } = getContentFromArray(rawContent)
+
+    const message = getFormattedMessage({
+      identifier,
+      content: messageContent,
+      type: INFO_EVENT,
+    })
 
     console.info(message)
 
@@ -144,16 +198,27 @@ class Logger {
 
   /**
    * Given a content, emits a success message to the console.
-   * @param {*} content - The content to be emitted.
+   * @param {...*} rawContent - The content to be emitted.
    * @returns {String} The formatted message.
    * @example
-   * // Emitts a formatted message to the console.
+   * // Emmits a formatted message to the console.
    * logger.success('Hello World!');
    * // Outputs:
-   * // '[SUCCESS_COLOR]<[PROCESS_PID]> [LOG_TYPE] [LOGGER_ID]:[RESET_COLOR]\n[MESSAGE_CONTENT]'
+   * // '<PID> [SUCCESS] @LOGGER_ID:\nHello World!'
+   * @example
+   * // Emmits a formatted message to the console with an identifier.
+   * logger.success('myLogIdentifier', 'Hello World!');
+   * // Outputs:
+   * // '<PID> [SUCCESS] @LOGGER_ID.myLogIdentifier:\nHello World!'
    */
-  success(content) {
-    const message = this.getFormattedMessage({ content, type: SUCCESS_EVENT })
+  const success = (...rawContent) => {
+    const { identifier, messageContent } = getContentFromArray(rawContent)
+
+    const message = getFormattedMessage({
+      identifier,
+      content: messageContent,
+      type: SUCCESS_EVENT,
+    })
 
     console.log(message)
 
@@ -162,16 +227,27 @@ class Logger {
 
   /**
    * Given a content, emits an error message to the console.
-   * @param {*} content - The content to be emitted.
+   * @param {...*} rawContent - The content to be emitted.
    * @returns {String} The formatted message.
    * @example
-   * // Emitts a formatted message to the console.
+   * // Emmits a formatted message to the console.
    * logger.error('Hello World!');
    * // Outputs:
-   * // '[ERROR_COLOR]<[PROCESS_PID]> [LOG_TYPE] [LOGGER_ID]:[RESET_COLOR]\n[MESSAGE_CONTENT]'
+   * // '<PID> [ERROR] @LOGGER_ID:\nHello World!'
+   * @example
+   * // Emmits a formatted message to the console with an identifier.
+   * logger.error('myLogIdentifier', 'Hello World!');
+   * // Outputs:
+   * // '<PID> [ERROR] @LOGGER_ID.myLogIdentifier:\nHello World!'
    */
-  error(content) {
-    const message = this.getFormattedMessage({ content, type: ERROR_EVENT })
+  const error = (...rawContent) => {
+    const { identifier, messageContent } = getContentFromArray(rawContent)
+
+    const message = getFormattedMessage({
+      identifier,
+      content: messageContent,
+      type: ERROR_EVENT,
+    })
 
     console.error(message)
 
@@ -180,16 +256,27 @@ class Logger {
 
   /**
    * Given a content, emits a warn message to the console.
-   * @param {*} content - The content to be emitted.
+   * @param {...*} rawContent - The content to be emitted.
    * @returns {String} The formatted message.
    * @example
-   * // Emitts a formatted message to the console.
+   * // Emmits a formatted message to the console.
    * logger.warn('Hello World!');
    * // Outputs:
-   * // '[WARN_COLOR]<[PROCESS_PID]> [LOG_TYPE] [LOGGER_ID]:[RESET_COLOR]\n[MESSAGE_CONTENT]'
+   * // '<PID> [WARN] @LOGGER_ID:\nHello World!'
+   * @example
+   * // Emmits a formatted message to the console with an identifier.
+   * logger.warn('myLogIdentifier', 'Hello World!');
+   * // Outputs:
+   * // '<PID> [WARN] @LOGGER_ID.myLogIdentifier:\nHello World!'
    */
-  warn(content) {
-    const message = this.getFormattedMessage({ content, type: WARN_EVENT })
+  const warn = (...rawContent) => {
+    const { identifier, messageContent } = getContentFromArray(rawContent)
+
+    const message = getFormattedMessage({
+      identifier,
+      content: messageContent,
+      type: WARN_EVENT,
+    })
 
     console.warn(message)
 
@@ -221,7 +308,7 @@ class Logger {
    * // '----------'
    * // ''
    */
-  space(spacer, spacerLength = 40) {
+  const space = (spacer, spacerLength = 40) => {
     const content = ['']
     let spacerString = ''
 
@@ -250,11 +337,31 @@ class Logger {
    * // Clears the console.
    * logger.clear();
    */
-  clear() {
+  const clear = () => {
     console.clear()
 
     return true
   }
+
+  /**
+   * The Logger instance.
+   * @property {module:Logger~createLogger~info} info
+   * @property {module:Logger~createLogger~success} success
+   * @property {module:Logger~createLogger~error} error
+   * @property {module:Logger~createLogger~warn} warn
+   * @property {module:Logger~createLogger~log} log
+   * @property {module:Logger~createLogger~space} space
+   * @property {module:Logger~createLogger~clear} clear
+   */
+  return {
+    info,
+    success,
+    error,
+    warn,
+    log,
+    space,
+    clear,
+  }
 }
 
-module.exports = { Logger }
+module.exports = { createLogger }

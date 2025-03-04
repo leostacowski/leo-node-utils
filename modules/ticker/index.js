@@ -1,150 +1,164 @@
-const Emitter = require('events')
+'use strict'
 
 /**
- * The default beat of the Ticker (in milisseconds).
- * @constant {Number} TICK_BEAT=500
+ * Ticker module.
+ * @module Ticker
  */
-const TICK_BEAT = 500
 
-/**
- * Available beat intervals.
- * @constant {Array.<String>} BEAT_EVENTS=['tick', 'second', 'minute', 'hour', 'day']
+/** Ticker's EventEmitter instance.
+ * @private
+ * @constant {NodeJS.EventEmitter} EVENT_EMITTER
  */
-const BEAT_EVENTS = ['tick', 'second', 'minute', 'hour', 'day']
+const EVENT_EMITTER = require('events')
 
 /**
- * Class that defines a Ticker instance.
- * @param {Number} [beat=TICK_BEAT] - The beat of the Ticker (in milisseconds).
+ * The default beat of the Ticker (In milisseconds).
+ * @readonly
+ * @constant {Number} TICK_BEAT_MS=500
+ */
+const TICK_BEAT_MS = 500
+
+/**
+ * The event name 'tick' of the Module.
+ * @readonly
+ * @constant {String} TICK_EVENT='tick'
+ */
+const TICK_EVENT = 'tick'
+
+/**
+ * The event name 'second' of the Module.
+ * @readonly
+ * @constant {String} SECOND_EVENT='second'
+ */
+const SECOND_EVENT = 'second'
+
+/**
+ * The event name 'minute' of the Module.
+ * @readonly
+ * @constant {String} MINUTE_EVENT='minute'
+ */
+const MINUTE_EVENT = 'minute'
+
+/**
+ * The event name 'hour' of the Module.
+ * @readonly
+ * @constant {String} HOUR_EVENT='hour'
+ */
+const HOUR_EVENT = 'hour'
+
+/**
+ * The event name 'day' of the Module.
+ * @readonly
+ * @constant {String} DAY_EVENT='day'
+ */
+const DAY_EVENT = 'day'
+
+/**
+ * Function that creates new Ticker instances.
+ * @param {Number} [beatMs=TICK_BEAT_MS] - [Optional] The beat of the Ticker (In milisseconds).
+ * @returns {Object} The Ticker instance.
  * @example
  * // Creates a new Ticker instance.
- * const ticker = new Ticker();
+ * const ticker = createTicker();
  * @example
- * // Creates a new Ticker instance with a beat of 2 seconds.
- * const ticker = new Ticker(2000);
+ * // Creates a new Ticker instance with a default beat of 2 seconds.
+ * const ticker = createTicker(2000);
  */
-class Ticker {
-  /**
-   * The current second.
-   * @private
-   * @type {Number}
-   */
-  seconds = new Date().getSeconds()
+const createTicker = (beatMs = TICK_BEAT_MS) => {
+  if (!Number.isInteger(beatMs) || beatMs < 1)
+    throw new Error('The beat milissecond value must be an integer greater than 0.')
 
   /**
-   * The current minute.
+   * The event eventEmitter instance of the Ticker.
    * @private
-   * @type {Number}
+   * @type {NodeJS.EventEmitter}
    */
-  minutes = new Date().getMinutes()
+  const emitter = new EVENT_EMITTER()
 
   /**
-   * The current hour.
+   * The current date information.
    * @private
-   * @type {Number}
+   * @type {Object}
+   * @property {Number} [seconds=new Date().getSeconds()] - The current date' second.
+   * @property {Number} [minutes=new Date().getMinutes()]  - The current date's minute.
+   * @property {Number} [hours=new Date().getHours()]  - The current date's hour.
+   * @property {Number} [days=new Date().getDate()]  - The current date's day.
    */
-  hours = new Date().getHours()
-
-  /**
-   * The current day.
-   * @private
-   * @type {Number}
-   */
-  days = new Date().getDate()
-
-  /**
-   * The current beat of the Ticker (in milisseconds).
-   * @private
-   * @type {Number}
-   */
-  targetBeat = TICK_BEAT
+  const currentDate = {
+    seconds: new Date().getSeconds(),
+    minutes: new Date().getMinutes(),
+    hours: new Date().getHours(),
+    days: new Date().getDate(),
+  }
 
   /**
    * The interval instance of the Ticker.
    * @private
    * @type {Number|NodeJS.Timeout}
    */
-  interval
-
-  /**
-   * The event emitter instance of the Ticker.
-   * @private
-   * @type {Emitter}
-   */
-  emitter = new Emitter()
+  let interval
 
   /**
    * The list of unique active events.
    * @private
    * @type {Array}
    */
-  activeEvents = []
-
-  /**
-   * Creates a new Ticker instance.
-   * @constructor
-   */
-  constructor(beat = TICK_BEAT) {
-    if (!Number.isInteger(beat) || beat < 1)
-      throw new Error('The beat must be an integer greater than 0.')
-
-    this.targetBeat = beat
-    this.tick()
-  }
+  let activeEvents = []
 
   /**
    * On a predefined beat interval, emmits ticking events.
    * @private
    * @returns {undefined}
    */
-  tick() {
-    this.interval = setInterval(() => {
-      if (!this.activeEvents.length) return
+  const tick = () => {
+    interval = setInterval(() => {
+      if (!activeEvents.length) return
 
-      if (this.activeEvents.includes('tick')) {
-        this.emitter.emit('tick')
+      if (activeEvents.includes('tick')) {
+        emitter.emit('tick')
       }
 
-      if (this.activeEvents.includes('second')) {
+      if (activeEvents.includes('second')) {
         const seconds = new Date().getSeconds()
 
-        if (seconds !== this.seconds) {
-          this.emitter.emit('second')
-          this.seconds = seconds
+        if (currentDate.seconds !== seconds) {
+          emitter.emit('second')
+          currentDate.seconds = seconds
         }
       }
 
-      if (this.activeEvents.includes('minute')) {
+      if (activeEvents.includes('minute')) {
         const minutes = new Date().getMinutes()
 
-        if (minutes !== this.minutes) {
-          this.emitter.emit('minute')
-          this.minutes = minutes
+        if (currentDate.minutes !== minutes) {
+          emitter.emit('minute')
+          currentDate.minutes = minutes
         }
       }
 
-      if (this.activeEvents.includes('hour')) {
+      if (activeEvents.includes('hour')) {
         const hours = new Date().getHours()
 
-        if (hours !== this.hours) {
-          this.emitter.emit('hour')
-          this.hours = hours
+        if (currentDate.hours !== hours) {
+          emitter.emit('hour')
+          currentDate.hours = hours
         }
       }
 
-      if (this.activeEvents.includes('day')) {
+      if (activeEvents.includes('day')) {
         const days = new Date().getDate()
 
-        if (days !== this.days) {
-          this.emitter.emit('day')
-          this.days = days
+        if (currentDate.days !== days) {
+          emitter.emit('day')
+          currentDate.days = days
         }
       }
-    }, this.targetBeat)
+    }, beatMs)
   }
 
   /**
    * The callback function to be called on each interval beat.
-   * @memberof Ticker.onEach
+   * @memberof module:Ticker~createTicker~onEach
    * @callback beatCallback
    * @param {Function} [onFinish] - Must be invoked to disable the callback's event listener/emitter.
    * @returns {undefined}
@@ -152,8 +166,7 @@ class Ticker {
 
   /**
    * Given a desired beat interval, executes a callback function on each interval beat.
-   * @memberof Ticker
-   * @param {'tick' | 'second' | 'minute' | 'hour' | 'day'} beatEvent - The desired beat interval.
+   * @param {TICK_EVENT | SECOND_EVENT | MINUTE_EVENT | HOUR_EVENT | DAY_EVENT} beatEvent - The desired beat interval.
    * @param {beatCallback} callback - The function to be called on each interval beat.
    * @returns {undefined}
    * @example
@@ -166,7 +179,9 @@ class Ticker {
    *
    * ticker.onEach('tick', callback);
    */
-  onEach(beatEvent, callback) {
+  const onEach = (beatEvent, callback) => {
+    const BEAT_EVENTS = [TICK_EVENT, SECOND_EVENT, MINUTE_EVENT, HOUR_EVENT, DAY_EVENT]
+
     if (typeof beatEvent !== 'string' || !BEAT_EVENTS.includes(beatEvent))
       throw new Error(
         `The beat interval must be one of ${BEAT_EVENTS.map(
@@ -177,32 +192,43 @@ class Ticker {
     if (callback instanceof Function !== true)
       throw new Error('The callback must be a function.')
 
-    if (!this.activeEvents.includes(beatEvent)) this.activeEvents.push(beatEvent)
+    if (!activeEvents.includes(beatEvent)) activeEvents.push(beatEvent)
 
     const callbackFunc = () => {
       const onFinish = () => {
-        this.emitter.removeListener(beatEvent, callbackFunc)
-        this.activeEvents = this.activeEvents.filter((event) => event !== beatEvent)
+        emitter.removeListener(beatEvent, callbackFunc)
+        activeEvents = activeEvents.filter((event) => event !== beatEvent)
       }
 
       return callback(onFinish)
     }
 
-    this.emitter.on(beatEvent, callbackFunc)
+    emitter.on(beatEvent, callbackFunc)
   }
 
   /**
    * Finishes the ticking instance.
-   * @memberof Ticker
    * @returns {undefined}
    * @example
    * // Finishes the ticking instance.
    * ticker.die()
    */
-  die() {
-    clearInterval(this.interval)
-    this.emitter.removeAllListeners()
+  const die = () => {
+    clearInterval(interval)
+    emitter.removeAllListeners()
+  }
+
+  tick()
+
+  /**
+   * The Ticker instance.
+   * @property {module:Ticker~createTicker~onEach} onEach
+   * @property {module:Ticker~createTicker~die} die
+   */
+  return {
+    onEach,
+    die,
   }
 }
 
-module.exports = { Ticker }
+module.exports = { createTicker }

@@ -1,21 +1,19 @@
 'use strict'
 
-const { Ticker } = require('./ticker')
-const { Logger } = require('./logger')
+/**
+ * LeoNodeUtils global module.
+ * @module LeoNodeUtils
+ */
 
+const { createTicker } = require('./ticker')
+const { createLogger } = require('./logger')
+
+/**
+ * LeoNodeUtils module exports.
+ * @property {module:Ticker~createTicker} createTicker
+ * @property {module:Logger~createLogger} createLogger
+ */
 module.exports = {
-  Ticker,
-  Logger,
+  createTicker,
+  createLogger,
 }
-
-const logger = new Logger('test')
-
-logger.log('Hello World!')
-logger.space()
-logger.info('Hello World!')
-logger.space('-')
-logger.success('Hello World!')
-logger.space('-', 10)
-logger.error('Hello World!')
-logger.space('+')
-logger.warn('Hello World!')

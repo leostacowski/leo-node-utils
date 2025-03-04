@@ -12,7 +12,7 @@
     "build": "",
     "prebuild": "yarn --force --update-checksums && cls",
     "postbuild": "yarn document",
-    "document": "jsdoc2md --template README.hbs modules/**/*.js > README.md"
+    "document": "jsdoc2md modules/**/*.js > DOCUMENTATION.md"
   },
   "devDependencies": {
     "jsdoc-to-markdown": "^9.1.1",
